@@ -6,8 +6,10 @@
 #include <gl\glu.h>			// Header File For The GLu32 Library
 #include "Sfera.h"
 
+const float Ball::r = 0.03f;
+
 Ball::Ball(const int number)
-	: number(number), m(0.2), r(0.03), mu_s(0.01)
+	: number(number), m(0.2),  mu_s(0.01)
 {
 	Init();
 }
@@ -74,6 +76,11 @@ void Ball::Init()
 	v = glm::vec3(0.0f);
 	w = glm::vec3(0.0f);
 	p = 0.0f;
+}
+
+void Ball::SetPosition(glm::vec3 x)
+{
+	this->x = x;
 }
 
 void Ball::SetSlidingVelocity(glm::vec3 v)

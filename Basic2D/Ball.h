@@ -17,7 +17,7 @@ private:
 public:
 	const int number;		// number of the ball (0: white, 1-15)
 	const float m;			// weight = 0.2 Kg
-	const float r;			// radius = 61.5 mm
+	static const float r;	// radius = (61.5 mm) 0.03
 	const float mu_s;		// friction coefficient: mu_s=0.01
 
 	Ball(int number);
@@ -32,6 +32,7 @@ public:
 	float GetPhase();
 
 	void Init();
+	void SetPosition(glm::vec3 x);
 	void SetSlidingVelocity(glm::vec3 v);
 	void SetAngularVelocity(glm::vec3 w);
 	

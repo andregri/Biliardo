@@ -15,7 +15,6 @@
 #include "Table.h"
 #include "Ball.h"
 
-
 // All Setup For OpenGL Goes Here
 bool MyModel::InitGL(void)
 {
@@ -37,7 +36,7 @@ bool MyModel::InitGL(void)
 	// up     (0,1,0)
 	gluLookAt(0.0,0.0,0.0, 0.0,0.0,-1.0, 0.0,1.0,0.0);
 
-	Pool.ball15.SetShotVelocity(glm::vec3(0.2f, 0.2f, 0.0f));
+	Pool.ball15.SetShotVelocity(glm::vec3(0.2f, 0.0f, 0.0f));
 
 	return true;										// Initialization Went OK
 }
@@ -73,12 +72,12 @@ void MyModel::ReSizeGLScene(int width, int height)
 	this->Wwidth = width;
 
 	if (width >= height) {
-		this->plx = 1.0;
+		this->plx = 1.1;
 		this->ply = (double)height / (double)width;
 	}
 	else {
 		this->plx = (double)width / (double)height;
-		this->ply = 1.0;
+		this->ply = 1.1;
 	}
 
 	glMatrixMode(GL_MODELVIEW);					// Select The Modelview Matrix
@@ -91,11 +90,15 @@ void MyModel::ReSizeGLScene(int width, int height)
 bool MyModel::LoadGLTextures(void)
 {
 	/* load an image file directly as a new OpenGL texture */
-	texture[0] = SOIL_load_OGL_texture
+	texture[1] = SOIL_load_OGL_texture
+	("../Data/Ball1.jpg",
+		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+
+	texture[15] = SOIL_load_OGL_texture
 		( "../Data/Ball15.jpg",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y );
 
-	if(texture[0] == 0) return false;
+	if(texture[1] == 0 || texture[15] == 0) return false;
 
 	// Typical Texture Generation Using Data From The Bitmap
 	glBindTexture(GL_TEXTURE_2D, texture[0]);
@@ -145,29 +148,64 @@ bool MyModel::DrawGLScene(void)
 		glEnd();
 	}
 
-	// Draw a sphere
+	// Draw Ball 1
+	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+	glLoadIdentity();
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, texture[1]);
+	Pool.ball1.Draw();
+
+	// Draw Ball 15
+	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+	glLoadIdentity();
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);	// Necessary to draw correctly the color of ball!!
 																// Otherwise white parts are green.
 	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[0]);
-	//glTranslatef(0.0, 0.0, 0.0);
-	//glRotatef(angle+=0.1, 0.0, 1.0, 0.0);
-	//DrawSphere(1);
+	glBindTexture(GL_TEXTURE_2D, texture[15]);
 	Pool.ball15.Draw();
 
 #if !defined(DEBUG)
 	Pool.ball15.Move(elapsed);
+	Pool.ball1.Move(elapsed);
 #endif // DEBUG
 
 #ifdef DEBUG
+	Pool.ball1.Move(0.01);
 	Pool.ball15.Move(0.01);
 #endif // DEBUG
 
-	glm::vec3 pos = Pool.ball15.GetPosition();
-	bool isCollidingWall = (pos.x >= 1.0f) || (pos.x <= -1.0f) || (pos.y >= 0.5f) || (pos.y <= -0.5f);
-	if (isCollidingWall) {
-		Pool.CollisionWall(Pool.ball15);
+	// Wall Collisions
+	float eps = 0.01f;
+	for (int i = 0; i < 16; i++) {
+		if (Pool.balls[i] == 0) {
+			continue;
+		}
+		glm::vec3 pos = Pool.balls[i]->GetPosition();
+		bool isCollidingWall = (pos.x >= (1.0f-Ball::r)) || (pos.x <= (-1.0f+Ball::r)) || (pos.y >= (0.5f-Ball::r)) || (pos.y <= (-0.5f+Ball::r));
+		if (isCollidingWall) {
+			Pool.CollisionWall(*(Pool.balls[i]));
+		}
 	}
+
+	// Ball Collision
+	for (int i = 0; i < 16; i++) {
+		if (Pool.balls[i] == 0) {
+			continue;
+		}
+		for (int j = 0; j < 16 && j != i; j++) {
+			if (Pool.balls[j] == 0) {
+				continue;
+			}
+			glm::vec3 x1 = Pool.balls[i]->GetPosition();
+			glm::vec3 x2 = Pool.balls[j]->GetPosition();
+
+			if (glm::length(x1-x2) <= 2*Ball::r) {
+				Pool.CollisionBalls(*(Pool.balls[i]), *(Pool.balls[j]));
+			}
+		}
+	}
+
 
 	// TEXT ----------------------------------------- start
 	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
