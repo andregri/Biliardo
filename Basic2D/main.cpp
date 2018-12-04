@@ -285,8 +285,8 @@ LRESULT CALLBACK WndProc(	HWND	hWnd,			// Handle For This Window
 		POINTS p;
 		p = MAKEPOINTS(lParam);
 		glm::vec3 clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), 0.03f);
-		glm::vec3 ballPos = Data.Pool.ball15.GetPosition();
-		Data.Pool.ball15.SetShotVelocity((ballPos - clickPos));
+		glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();
+		Data.Pool.balls[0].SetShotVelocity((ballPos - clickPos));
 		break;
 	}
     case WM_MOUSEMOVE:

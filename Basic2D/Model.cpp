@@ -6,6 +6,7 @@
 
 #include <windows.h>		// Header File For Windows
 #include <stdio.h>			// Header File For Standard Input/Output
+#include <string.h>
 #include <gl\gl.h>			// Header File For The OpenGL32 Library
 #include <gl\glu.h>			// Header File For The GLu32 Library
 
@@ -34,11 +35,9 @@ bool MyModel::InitGL(void)
 	// eye    (0,0,0)
 	// center (0,0,-1)
 	// up     (0,1,0)
-	gluLookAt(0.0,0.0,0.0, 0.0,0.0,-1.0, 0.0,1.0,0.0);
+	//gluLookAt(0.0,0.0,0.0, 0.0,0.0,-1.0, 0.0,1.0,0.0);
 
-	Pool.ball15.SetShotVelocity(glm::vec3(0.2f, 0.0f, 0.0f));
-
-	return true;										// Initialization Went OK
+	return true;	// Initialization Went OK
 }
 
 GLvoid MyModel::SetProjection(GLsizei iWidth, GLsizei iHeight)
@@ -49,15 +48,20 @@ GLvoid MyModel::SetProjection(GLsizei iWidth, GLsizei iHeight)
 	glLoadIdentity();
 	
 	
-	glOrtho(-this->plx, this->plx, -this->ply, this->ply, -2.0f, 2.0f);
-	//gluPerspective(45.0, (GLfloat)iWidth / (GLfloat)iHeight, 0.1, 100.0);
-	//gluLookAt(	0.0, 0.0, 2.0,		// eye
-	//			0.0, 0.0, 0.0,		// center
-	//			0.0, 1.0, 0.0);		// up vector
+	//glOrtho(-this->plx, this->plx, -this->ply, this->ply, -2.0f, 2.0f);
+	gluPerspective(45.0, (GLfloat)iWidth / (GLfloat)iHeight, 0.1, 100.0);
+	gluLookAt(0.0, 0.0, 2.0,		// eye
+				0.0, 0.0, 0.0,		// center
+				0.0, 1.0, 0.0);		// up vector
 
 	//	Try to change the front clipping plane, for example:
 	//gluPerspective(CS.fovy,(GLfloat)iWidth/(GLfloat)iHeight,4,200.0);
+
+
+	glMatrixMode(GL_MODELVIEW);					// Select The Modelview Matrix
+	glLoadIdentity();							// Reset The Modelview Matrix
 }
+
 
 
 void MyModel::ReSizeGLScene(int width, int height)
@@ -90,15 +94,23 @@ void MyModel::ReSizeGLScene(int width, int height)
 bool MyModel::LoadGLTextures(void)
 {
 	/* load an image file directly as a new OpenGL texture */
-	texture[1] = SOIL_load_OGL_texture
-	("../Data/Ball1.jpg",
+	for (int i = 1; i < 16; i++) {
+		char path[20];
+		sprintf(path, "%s%d%s", "../Data/Ball", i, ".jpg");
+		//strcat(path,ballNumber);
+		//strcat(path, ".jpg");
+		texture[i] = SOIL_load_OGL_texture
+		(path,
+			SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
+
+		if (texture[i] == 0) {
+			return false;
+		}
+	}
+
+	texture[0] = SOIL_load_OGL_texture
+	("../Data/BallCue.jpg",
 		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y);
-
-	texture[15] = SOIL_load_OGL_texture
-		( "../Data/Ball15.jpg",
-		SOIL_LOAD_AUTO, SOIL_CREATE_NEW_ID, SOIL_FLAG_INVERT_Y );
-
-	if(texture[1] == 0 || texture[15] == 0) return false;
 
 	// Typical Texture Generation Using Data From The Bitmap
 	glBindTexture(GL_TEXTURE_2D, texture[0]);
@@ -133,7 +145,6 @@ bool MyModel::DrawGLScene(void)
 	glMatrixMode(GL_MODELVIEW);							// Select The Modelview Matrix
 	glLoadIdentity();									// Reset The View
 
-
 	// Draw a table
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	Pool.table.draw();
@@ -142,66 +153,52 @@ bool MyModel::DrawGLScene(void)
 	if (captured) {
 		glBegin(GL_LINES);
 		glColor3f(1.0f, 0.0f, 0.0f);
-		glVertex3f(ClientX2World(cx), ClientY2World(cy), Pool.ball15.r);
-		glm::vec3 x_ = Pool.ball15.GetPosition();
-		glVertex3f(x_[0], x_[1], Pool.ball15.r);
+		glVertex3f(ClientX2World(cx), ClientY2World(cy), Ball::r);
+		glm::vec3 x_ = Pool.balls[0].GetPosition();
+		glVertex3f(x_[0], x_[1], Ball::r);
 		glEnd();
 	}
 
-	// Draw Ball 1
-	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
-	glLoadIdentity();
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[1]);
-	Pool.ball1.Draw();
-
-	// Draw Ball 15
-	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
-	glLoadIdentity();
-	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);	// Necessary to draw correctly the color of ball!!
-																// Otherwise white parts are green.
-	glEnable(GL_TEXTURE_2D);
-	glBindTexture(GL_TEXTURE_2D, texture[15]);
-	Pool.ball15.Draw();
+	// set Textures to all balls
+	for (int i = 0; i < 16; i++) {
+		glEnable(GL_TEXTURE_2D);
+		glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+		glLoadIdentity();
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+		glBindTexture(GL_TEXTURE_2D, texture[i]);
+		Pool.balls[i].Draw();
+	}
 
 #if !defined(DEBUG)
-	Pool.ball15.Move(elapsed);
-	Pool.ball1.Move(elapsed);
+	for (int i = 0; i < 16; i++) {
+		Pool.balls[i].Move(elapsed);
+	}
 #endif // DEBUG
 
 #ifdef DEBUG
-	Pool.ball1.Move(0.01);
-	Pool.ball15.Move(0.01);
+	for (int i = 0; i < 16; i++) {
+		Pool.balls[i].Move(0.01);
+	}
 #endif // DEBUG
 
 	// Wall Collisions
 	float eps = 0.01f;
 	for (int i = 0; i < 16; i++) {
-		if (Pool.balls[i] == 0) {
-			continue;
-		}
-		glm::vec3 pos = Pool.balls[i]->GetPosition();
+		glm::vec3 pos = Pool.balls[i].GetPosition();
 		bool isCollidingWall = (pos.x >= (1.0f-Ball::r)) || (pos.x <= (-1.0f+Ball::r)) || (pos.y >= (0.5f-Ball::r)) || (pos.y <= (-0.5f+Ball::r));
 		if (isCollidingWall) {
-			Pool.CollisionWall(*(Pool.balls[i]));
+			Pool.CollisionWall(Pool.balls[i]);
 		}
 	}
 
 	// Ball Collision
 	for (int i = 0; i < 16; i++) {
-		if (Pool.balls[i] == 0) {
-			continue;
-		}
 		for (int j = 0; j < 16 && j != i; j++) {
-			if (Pool.balls[j] == 0) {
-				continue;
-			}
-			glm::vec3 x1 = Pool.balls[i]->GetPosition();
-			glm::vec3 x2 = Pool.balls[j]->GetPosition();
+			glm::vec3 x1 = Pool.balls[i].GetPosition();
+			glm::vec3 x2 = Pool.balls[j].GetPosition();
 
 			if (glm::length(x1-x2) <= 2*Ball::r) {
-				Pool.CollisionBalls(*(Pool.balls[i]), *(Pool.balls[j]));
+				Pool.CollisionBalls(Pool.balls[i], Pool.balls[j]);
 			}
 		}
 	}
@@ -233,13 +230,13 @@ bool MyModel::DrawGLScene(void)
 	this->glPrint("Elapsed time: %6.2f sec.  -  Fps %6.2f", Full_elapsed, fps);
 
 	glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
-	this->glPrint("Velocity: %1.6f ", Pool.ball15.GetSlidingVelocity().x);
+	this->glPrint("Velocity: %1.6f ", Pool.balls[15].GetSlidingVelocity().x);
 
 	glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(101), 0.0f);
 	this->glPrint("Phase: %2.6f %2.6f %2.6f",
-		Pool.ball15.GetPosition().x,
-		Pool.ball15.GetPosition().y,
-		Pool.ball15.GetPosition().z);
+		Pool.balls[8].GetPosition().x,
+		Pool.balls[8].GetPosition().y,
+		Pool.balls[8].GetPosition().z);
 
 	if(this->Full_elapsed < 6) {
 		glRasterPos3f(- (float) plx + PixToCoord_X(10), (float) -ply+PixToCoord_Y(21), 0.0f);
