@@ -67,19 +67,24 @@ void Poolgame::CollisionWall(Ball &ball)
 	glm::vec3 w = ball.GetAngularVelocity();
 	glm::vec3 x = ball.GetPosition();
 
-	if (x[0] >= table.width / 2 - Ball::r) {			// right side
+	if (x[0] >= table.width / 2 - Ball::r) {		// right side
+		// Prevent balls from going out the table
+		ball.SetPosition(glm::vec3(table.width / 2 - Ball::r, x[1], x[2]));
 		ball.SetSlidingVelocity(glm::vec3(-v.x, v.y, v.z));
 		ball.SetAngularVelocity(glm::vec3(w.x, -w.y, w.z));
 	}
 	else if (x[0] <= -table.width / 2 + Ball::r) {	// left side
+		ball.SetPosition(glm::vec3(-table.width / 2 + Ball::r, x[1], x[2]));
 		ball.SetSlidingVelocity(glm::vec3(-v.x, v.y, v.z));
 		ball.SetAngularVelocity(glm::vec3(w.x, -w.y, w.z));
 	}
 	else if (x[1] >= table.height / 2 - Ball::r) {	// top side
+		ball.SetPosition(glm::vec3(x[0], table.height / 2 - Ball::r, x[2]));
 		ball.SetSlidingVelocity(glm::vec3(v.x, -v.y, v.z));
 		ball.SetAngularVelocity(glm::vec3(-w.x, w.y, w.z));
 	}
 	else if (x[1] <= -table.height / 2 + Ball::r) {	// bottom side
+		ball.SetPosition(glm::vec3(x[0], -table.height / 2 + Ball::r, x[2]));
 		ball.SetSlidingVelocity(glm::vec3(v.x, -v.y, v.z));
 		ball.SetAngularVelocity(glm::vec3(-w.x, w.y, w.z));
 	}
