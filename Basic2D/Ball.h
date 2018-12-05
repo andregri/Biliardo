@@ -12,6 +12,7 @@ private:
 	glm::vec3 v;	// velocity
 
 	float p;		// phase
+	glm::vec3 rot;	// rotation axis
 	glm::vec3 w;	// angular velocity
 
 public:

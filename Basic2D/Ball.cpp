@@ -37,6 +37,7 @@ void Ball::Move(float dt)
 		// update velocity
 		v += dv;
 		w += dw;
+		rot = w;
 	
 		// update position
 		x += (v * float(dt));
@@ -74,8 +75,10 @@ void Ball::Init()
 {
 	x = glm::vec3(0.0f, 0.0f, r);
 	v = glm::vec3(0.0f);
-	w = glm::vec3(0.0f);
-	p = 0.0f;
+	w = glm::vec3(0.0f, 0.0f, 0.0f);
+
+	rot = glm::vec3(0.0f, 1.0f, 0.0f);
+	p = 90.0f;
 }
 
 void Ball::SetPosition(glm::vec3 x)
@@ -96,8 +99,8 @@ void Ball::SetAngularVelocity(glm::vec3 w)
 void Ball::Draw()
 {
 	glTranslatef(x[0], x[1], r);
-	glm::vec3 w_norm = glm::normalize(w);
-	glRotatef(p, w_norm[0], w_norm[1], w_norm[2]);
+	glRotatef(p, rot[0], rot[1], rot[2]);
+	//glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 
 #if !defined(DEBUG)
 	DrawSphere(r);
