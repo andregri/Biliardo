@@ -50,7 +50,7 @@ GLvoid MyModel::SetProjection(GLsizei iWidth, GLsizei iHeight)
 	
 	//glOrtho(-this->plx, this->plx, -this->ply, this->ply, -2.0f, 2.0f);
 	gluPerspective(45.0, (GLfloat)iWidth / (GLfloat)iHeight, 0.1, 100.0);
-	gluLookAt(0.0, 0.0, 2.0,		// eye
+	gluLookAt(	0.0, 0.0, 2.5,		// eye
 				0.0, 0.0, 0.0,		// center
 				0.0, 1.0, 0.0);		// up vector
 
@@ -147,7 +147,7 @@ bool MyModel::DrawGLScene(void)
 
 	// Draw a table
 	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-	Pool.table.draw();
+	Pool.table.Draw();
 
 	// Draw cursor line
 	if (captured) {
@@ -185,7 +185,10 @@ bool MyModel::DrawGLScene(void)
 	float eps = 0.01f;
 	for (int i = 0; i < 16; i++) {
 		glm::vec3 pos = Pool.balls[i].GetPosition();
-		bool isCollidingWall = (pos.x >= (1.0f-Ball::r)) || (pos.x <= (-1.0f+Ball::r)) || (pos.y >= (0.5f-Ball::r)) || (pos.y <= (-0.5f+Ball::r));
+		bool isCollidingWall =	(pos.x >= (Pool.table.w / 2 - Ball::r)) || 
+								(pos.x <= (-Pool.table.w / 2 + Ball::r)) ||
+								(pos.y >= (Pool.table.h / 2 - Ball::r)) ||
+								(pos.y <= (-Pool.table.h / 2 + Ball::r));
 		if (isCollidingWall) {
 			Pool.CollisionWall(Pool.balls[i]);
 		}
