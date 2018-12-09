@@ -14,12 +14,12 @@ Table::Table()
 	wt = w / 2;
 	ht = h / 2;
 
-	pockets.push_back(glm::vec3(- wt, ht, 0.0f));	// top left
-	pockets.push_back(glm::vec3(0.0, ht + pocket_r, 0.0f));	// top middle
-	pockets.push_back(glm::vec3(wt, ht, 0.0f));		// top right
-	pockets.push_back(glm::vec3(-wt, -ht, 0.0f));	// bottom left
+	pockets.push_back(glm::vec3(- wt, ht, 0.0f));				// top left
+	pockets.push_back(glm::vec3(0.0, ht + pocket_r, 0.0f));		// top middle
+	pockets.push_back(glm::vec3(wt, ht, 0.0f));					// top right
+	pockets.push_back(glm::vec3(-wt, -ht, 0.0f));				// bottom left
 	pockets.push_back(glm::vec3(0.0, -ht - pocket_r, 0.0f));	// bottom middle
-	pockets.push_back(glm::vec3(wt, -ht, 0.0f));	// bottom right
+	pockets.push_back(glm::vec3(wt, -ht, 0.0f));				// bottom right
 }
 
 

@@ -58,7 +58,6 @@ void Poolgame::InitPositions()
 
 	// white ball position
 	balls[0].SetPosition(glm::vec3(-0.7f, 0.0f, Ball::r));
-	//balls[1].SetPosition(glm::vec3(0.5f, 0.0f, Ball::r));
 }
 
 void Poolgame::CollisionWall(Ball &ball)

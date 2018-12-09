@@ -183,14 +183,38 @@ bool MyModel::DrawGLScene(void)
 
 	// Wall Collisions
 	float eps = 0.01f;
+	float ht = Pool.table.h/2;
+	float wt = Pool.table.w/2;
+	float pr = Pool.table.pocket_r;
+
 	for (int i = 0; i < 16; i++) {
 		glm::vec3 pos = Pool.balls[i].GetPosition();
-		bool isCollidingWall =	(pos.x >= (Pool.table.w / 2 - Ball::r)) || 
-								(pos.x <= (-Pool.table.w / 2 + Ball::r)) ||
-								(pos.y >= (Pool.table.h / 2 - Ball::r)) ||
-								(pos.y <= (-Pool.table.h / 2 + Ball::r));
+		bool isCollidingWall =	(pos.x >= (wt - Ball::r)) || 
+								(pos.x <= (-wt + Ball::r)) ||
+								(pos.y >= (ht - Ball::r)) ||
+								(pos.y <= (-ht + Ball::r));
+
+		bool isInPocket = false;
+
+		// Control for middle pockets
+		if ((pos.x >= -pr			&& pos.x <= pr) &&
+			(pos.y >= ht - Ball::r	|| pos.y <= -ht + Ball::r)) {
+			isInPocket = true;
+		}
+		// Control for left pockets
+		if (pos.y <= -ht + pr || pos.y >= ht - pr) {
+			if ((pos.x >= -wt			&& pos.x <= -wt + 1.5*pr) ||
+				(pos.x >= wt - 1.5*pr	&& pos.x <= wt)) {
+				isInPocket = true;
+			}
+		}
 		if (isCollidingWall) {
-			Pool.CollisionWall(Pool.balls[i]);
+			if (isInPocket) {
+				
+			}
+			else {
+				Pool.CollisionWall(Pool.balls[i]);
+			}
 		}
 	}
 
