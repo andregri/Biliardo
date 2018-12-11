@@ -11,7 +11,6 @@ Poolgame::Poolgame()
 
 Poolgame::~Poolgame()
 {
-	InitPositions();
 }
 
 void Poolgame::InitPositions()

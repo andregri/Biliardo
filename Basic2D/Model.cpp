@@ -48,11 +48,11 @@ GLvoid MyModel::SetProjection(GLsizei iWidth, GLsizei iHeight)
 	glLoadIdentity();
 	
 	
-	//glOrtho(-this->plx, this->plx, -this->ply, this->ply, -2.0f, 2.0f);
-	gluPerspective(45.0, (GLfloat)iWidth / (GLfloat)iHeight, 0.1, 100.0);
-	gluLookAt(	0.0, 0.0, 2.5,		// eye
-				0.0, 0.0, 0.0,		// center
-				0.0, 1.0, 0.0);		// up vector
+	glOrtho(-this->plx, this->plx, -this->ply, this->ply, -2.0f, 2.0f);
+	//gluPerspective(45.0, (GLfloat)iWidth / (GLfloat)iHeight, 0.1, 100.0);
+	//gluLookAt(	0.0, 0.0, 2.5,		// eye
+	//			0.0, 0.0, 0.0,		// center
+	//			0.0, 1.0, 0.0);		// up vector
 
 	//	Try to change the front clipping plane, for example:
 	//gluPerspective(CS.fovy,(GLfloat)iWidth/(GLfloat)iHeight,4,200.0);
@@ -129,13 +129,13 @@ bool MyModel::DrawGLScene(void)
 	//  TIMING ---------------------------------------- start
 	clock_t t = clock();
 	// elapsed time in seconds from the last draw
-	double elapsed = double (t - Tstamp) /  (double) CLOCKS_PER_SEC;
+	double elapsed = double(t - Tstamp) / (double)CLOCKS_PER_SEC;
 	if (elapsed < 0.008) return true;  // to limit fps!!!!
 	// elapsed time in milliseconds from the last draw
-	int ms_elapsed = (int) (t - Tstamp);
+	int ms_elapsed = (int)(t - Tstamp);
 	// elapsed time in seconds from the beginning of the program
-	this->Full_elapsed = double (t - Tstart) /  (double) CLOCKS_PER_SEC;
-	this->frameTime += double (t - Tstamp) /  (double) CLOCKS_PER_SEC;
+	this->Full_elapsed = double(t - Tstart) / (double)CLOCKS_PER_SEC;
+	this->frameTime += double(t - Tstamp) / (double)CLOCKS_PER_SEC;
 
 	this->Tstamp = t;
 	//  TIMING ---------------------------------------- end
@@ -161,71 +161,89 @@ bool MyModel::DrawGLScene(void)
 
 	// set Textures to all balls
 	for (int i = 0; i < 16; i++) {
-		glEnable(GL_TEXTURE_2D);
-		glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
-		glLoadIdentity();
-		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-		glBindTexture(GL_TEXTURE_2D, texture[i]);
-		Pool.balls[i].Draw();
+		// Always draw white ball, but not balls in pockets
+		if (!Pool.balls[i].isInPocket || i == 0) {
+			glEnable(GL_TEXTURE_2D);
+			glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+			glLoadIdentity();
+			glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+			glBindTexture(GL_TEXTURE_2D, texture[i]);
+			Pool.balls[i].Draw();
+		}
 	}
 
+	int nBalls = 16;
+
 #if !defined(DEBUG)
-	for (int i = 0; i < 16; i++) {
-		Pool.balls[i].Move(elapsed);
+	for (int i = 0; i < nBalls; i++) {
+		if (!Pool.balls[i].isInPocket) {
+			Pool.balls[i].Move(elapsed);
+		}
 	}
 #endif // DEBUG
 
 #ifdef DEBUG
 	for (int i = 0; i < 16; i++) {
-		Pool.balls[i].Move(0.01);
+		if (!Pool.balls[i].isInPocket) {
+			Pool.balls[i].Move(0.01);
+		}
 	}
 #endif // DEBUG
 
-	// Wall Collisions
-	float eps = 0.01f;
+	
 	float ht = Pool.table.h/2;
 	float wt = Pool.table.w/2;
 	float pr = Pool.table.pocket_r;
 
-	for (int i = 0; i < 16; i++) {
-		glm::vec3 pos = Pool.balls[i].GetPosition();
-		bool isCollidingWall =	(pos.x >= (wt - Ball::r)) || 
-								(pos.x <= (-wt + Ball::r)) ||
-								(pos.y >= (ht - Ball::r)) ||
-								(pos.y <= (-ht + Ball::r));
+	for (int i = 0; i < nBalls; i++) {
+		if (!Pool.balls[i].isInPocket) {
+			
+			// Wall Collisions
+			glm::vec3 pos = Pool.balls[i].GetPosition();
+			bool isCollidingWall = (pos.x >= (wt - Ball::r)) ||
+				(pos.x <= (-wt + Ball::r)) ||
+				(pos.y >= (ht - Ball::r)) ||
+				(pos.y <= (-ht + Ball::r));
 
-		bool isInPocket = false;
-
-		// Control for middle pockets
-		if ((pos.x >= -pr			&& pos.x <= pr) &&
-			(pos.y >= ht - Ball::r	|| pos.y <= -ht + Ball::r)) {
-			isInPocket = true;
-		}
-		// Control for left pockets
-		if (pos.y <= -ht + pr || pos.y >= ht - pr) {
-			if ((pos.x >= -wt			&& pos.x <= -wt + 1.5*pr) ||
-				(pos.x >= wt - 1.5*pr	&& pos.x <= wt)) {
+			// Check if a ball fell in pocket
+			bool isInPocket = false;
+			// Control for middle pockets
+			if ((pos.x >= -pr && pos.x <= pr) &&
+				(pos.y >= ht - Ball::r || pos.y <= -ht + Ball::r)) {
 				isInPocket = true;
 			}
-		}
-		if (isCollidingWall) {
-			if (isInPocket) {
-				
+			// Control for left pockets
+			if (pos.y <= -ht + pr || pos.y >= ht - pr) {
+				if ((pos.x >= -wt && pos.x <= -wt + 1.1*pr) ||
+					(pos.x >= wt - 1.1*pr	&& pos.x <= wt)) {
+					isInPocket = true;
+				}
 			}
-			else {
-				Pool.CollisionWall(Pool.balls[i]);
+			if (isCollidingWall) {
+				if (isInPocket) {
+					Pool.balls[i].isInPocket = true;
+				}
+				else {
+					Pool.CollisionWall(Pool.balls[i]);
+				}
 			}
 		}
 	}
 
 	// Ball Collision
-	for (int i = 0; i < 16; i++) {
-		for (int j = 0; j < 16 && j != i; j++) {
-			glm::vec3 x1 = Pool.balls[i].GetPosition();
-			glm::vec3 x2 = Pool.balls[j].GetPosition();
+	if (!Pool.balls[0].isInPocket) {
+		for (int i = 0; i < nBalls; i++) {
+			if (!Pool.balls[i].isInPocket) {
+				for (int j = 0; j < nBalls && j != i; j++) {
+					if (!Pool.balls[i].isInPocket) {
+						glm::vec3 x1 = Pool.balls[i].GetPosition();
+						glm::vec3 x2 = Pool.balls[j].GetPosition();
 
-			if (glm::length(x1-x2) <= 2*Ball::r) {
-				Pool.CollisionBalls(Pool.balls[i], Pool.balls[j]);
+						if (glm::length(x1 - x2) <= 2 * Ball::r) {
+							Pool.CollisionBalls(Pool.balls[i], Pool.balls[j]);
+						}
+					}
+				}
 			}
 		}
 	}
@@ -261,9 +279,9 @@ bool MyModel::DrawGLScene(void)
 
 	glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(101), 0.0f);
 	this->glPrint("Phase: %2.6f %2.6f %2.6f",
-		Pool.balls[8].GetPosition().x,
-		Pool.balls[8].GetPosition().y,
-		Pool.balls[8].GetPosition().z);
+		Pool.balls[0].GetPosition().x,
+		Pool.balls[0].GetPosition().y,
+		Pool.balls[0].GetPosition().z);
 
 	if(this->Full_elapsed < 6) {
 		glRasterPos3f(- (float) plx + PixToCoord_X(10), (float) -ply+PixToCoord_Y(21), 0.0f);

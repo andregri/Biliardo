@@ -20,6 +20,8 @@ public:
 	const float m;			// weight = 0.2 Kg
 	static const float r;	// radius = 0.03 (diametro 61.5 mm)
 	const float mu_s;		// friction coefficient: mu_s=0.01
+	bool isInPocket;
+	bool isMoving;
 
 	Ball(int number);
 	~Ball();

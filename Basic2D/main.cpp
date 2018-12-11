@@ -265,28 +265,70 @@ BOOL CreateGLWindow(char* title, int width, int height, int bits, bool fullscree
 
 ///////////////////////////////////////////////////////////
 // callback function
-LRESULT CALLBACK WndProc(	HWND	hWnd,			// Handle For This Window
-							UINT	uMsg,			// Message For This Window
-							WPARAM	wParam,			// Additional Message Information
-							LPARAM	lParam)			// Additional Message Information
+LRESULT CALLBACK WndProc(	HWND	hWnd,		// Handle For This Window
+							UINT	uMsg,		// Message For This Window
+							WPARAM	wParam,		// Additional Message Information
+							LPARAM	lParam)		// Additional Message Information
 {
-	switch (uMsg)									// Check For Windows Messages
+	switch (uMsg)								// Check For Windows Messages
 	{
 	case WM_ACTIVATE:							// Watch For Window Activate Message
 	{
 		if (!HIWORD(wParam))					// Check Minimization State
 		{ Data.active=TRUE; }					// Program Is Active
-		else { Data.active=FALSE; }		// Program Is No Longer Active
-		return 0;								      // Return To The Message Loop
+		else { Data.active=FALSE; }				// Program Is No Longer Active
+		return 0;								// Return To The Message Loop
 	}
 	
 	case WM_LBUTTONDOWN:
 	{
 		POINTS p;
 		p = MAKEPOINTS(lParam);
-		glm::vec3 clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), 0.03f);
-		glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();
-		Data.Pool.balls[0].SetShotVelocity((ballPos - clickPos));
+		if (!Data.Pool.balls[0].isInPocket) {	// White ball is not in pocket. Hit the ball
+			for (int i = 0; i < 16; i++) {
+				// If any ball is moving, you can't hit the white ball
+				if (Data.Pool.balls[i].isMoving && !Data.Pool.balls[i].isInPocket) {
+					return 0;
+				}
+			}
+			glm::vec3 clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), Ball::r);
+			glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();
+			Data.Pool.balls[0].SetShotVelocity((clickPos - ballPos));
+		}
+		else {									// White ball is in pocket. It needs to be placed on table
+			// You want to place the white ball outside the table
+			bool isOutside = true;
+			float ht = Data.Pool.table.h / 2;
+			if (Data.ClientY2World(p.y) > -ht + Ball::r	  &&
+				Data.ClientY2World(p.y) < ht - Ball::r) {
+				isOutside = false;
+			}
+
+			// There is another ball where you want to place white ball
+			bool isPositionEmpty = true;
+			for (int i = 8; i < 16; i++) {
+				// Check if you want to place the white ball over another ball
+				float ballX = Data.Pool.balls[i].GetPosition().x;
+				if (!Data.Pool.balls[i].isInPocket &&
+					ballX < -0.7f + 2*Ball::r &&
+					ballX > -0.7f - 2*Ball::r) {
+
+					float ballY = Data.Pool.balls[i].GetPosition().y;
+
+					if (Data.ClientY2World(p.y) > ballY - 2*Ball::r &&
+						Data.ClientY2World(p.y) < ballY + 2*Ball::r) {
+						isPositionEmpty = false;
+					}
+				}
+			}
+
+			if (!isOutside && isPositionEmpty) {	// Place the ball
+				glm::vec3 whiteNewPos = glm::vec3(-0.7f, Data.ClientY2World(p.y), Ball::r);
+				Data.Pool.balls[0].SetPosition(whiteNewPos);
+				Data.Pool.balls[0].SetSlidingVelocity(glm::vec3(0.0f));
+				Data.Pool.balls[0].isInPocket = false;
+			}
+		}
 		break;
 	}
     case WM_MOUSEMOVE:
@@ -296,7 +338,14 @@ LRESULT CALLBACK WndProc(	HWND	hWnd,			// Handle For This Window
          Data.cx = p.x; Data.cy = p.y;
          if( Data.IsInClient(p.x,p.y) ) {
 			if( !Data.captured ) { Data.captured = true; SetCapture(hWnd); ShowCursor(TRUE); }	// SHOW ALWAYS CURSOR
-         } else {
+			
+			// If the white ball fell in the pocket, the user can choose where to place it
+			if (Data.Pool.balls[0].isInPocket) {
+				glm::vec3 whiteNewPos = glm::vec3(-0.7f, Data.ClientY2World(p.y), Ball::r);
+				Data.Pool.balls[0].SetPosition(whiteNewPos);
+			}
+		 }
+		 else {
 			if( Data.captured ) { Data.captured = false; ReleaseCapture(); ShowCursor(TRUE); }
          }
 		 break;

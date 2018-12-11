@@ -42,10 +42,13 @@ void Ball::Move(float dt)
 		// update position
 		x += (v * float(dt));
 		p += (glm::length(w) * dt) * 180.0f / 3.14f;
+
+		isMoving = true;
 	}
 	else {
 		v = glm::vec3(0.0f);
 		//w = glm::vec3(0.0f);
+		isMoving = false;
 	}
 
 }
@@ -79,6 +82,9 @@ void Ball::Init()
 
 	rot = glm::vec3(0.0f, 1.0f, 0.0f);
 	p = 90.0f;
+
+	isInPocket = false;
+	isMoving = false;
 }
 
 void Ball::SetPosition(glm::vec3 x)
