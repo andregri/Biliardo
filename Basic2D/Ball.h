@@ -23,6 +23,9 @@ public:
 	bool isInPocket;
 	bool isMoving;
 
+	enum BallType { Undefined, Striped, Solid };
+	BallType color;
+
 	Ball(int number);
 	~Ball();
 

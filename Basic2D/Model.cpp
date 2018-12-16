@@ -160,6 +160,7 @@ bool MyModel::DrawGLScene(void)
 	}
 
 	// set Textures to all balls
+#if !defined(DEBUG)
 	for (int i = 0; i < 16; i++) {
 		// Always draw white ball, but not balls in pockets
 		if (!Pool.balls[i].isInPocket || i == 0) {
@@ -171,6 +172,32 @@ bool MyModel::DrawGLScene(void)
 			Pool.balls[i].Draw();
 		}
 	}
+#endif // DEBUG
+
+#ifdef DEBUG
+	glEnable(GL_TEXTURE_2D);
+	glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+	glLoadIdentity();
+	glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+	glBindTexture(GL_TEXTURE_2D, texture[0]);
+	Pool.balls[0].Draw();
+	for (int i = 1; i < 9; i++) {
+		glEnable(GL_TEXTURE_2D);
+		glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+		glLoadIdentity();
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+		glBindTexture(GL_TEXTURE_2D, texture[8]);
+		Pool.balls[i].Draw();
+	}
+	for (int i = 9; i < 16; i++) {
+		glEnable(GL_TEXTURE_2D);
+		glMatrixMode(GL_MODELVIEW);				// Select The Modelview Matrix
+		glLoadIdentity();
+		glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+		glBindTexture(GL_TEXTURE_2D, texture[1]);
+		Pool.balls[i].Draw();
+	}
+#endif // DEBUG
 
 	int nBalls = 16;
 
@@ -221,7 +248,8 @@ bool MyModel::DrawGLScene(void)
 			}
 			if (isCollidingWall) {
 				if (isInPocket) {
-					Pool.balls[i].isInPocket = true;
+					Pool.BallFallsInPocket(i);
+					Pool.ballInPocket = true;
 				}
 				else {
 					Pool.CollisionWall(Pool.balls[i]);
@@ -230,22 +258,61 @@ bool MyModel::DrawGLScene(void)
 		}
 	}
 
-	// Ball Collision
-	if (!Pool.balls[0].isInPocket) {
+	// Ball Collisions
+	bool ballsAreMoving = false;
+	for (int i = 0; i < nBalls; i++) {
+		if (Pool.balls[i].isMoving) {
+			ballsAreMoving = true;
+			break;
+		}
+	}
+	if (ballsAreMoving) {
 		for (int i = 0; i < nBalls; i++) {
 			if (!Pool.balls[i].isInPocket) {
-				for (int j = 0; j < nBalls && j != i; j++) {
-					if (!Pool.balls[i].isInPocket) {
+				for (int j = 0; j < nBalls; j++) {
+					if (!Pool.balls[j].isInPocket && j != i) {
 						glm::vec3 x1 = Pool.balls[i].GetPosition();
 						glm::vec3 x2 = Pool.balls[j].GetPosition();
 
 						if (glm::length(x1 - x2) <= 2 * Ball::r) {
 							Pool.CollisionBalls(Pool.balls[i], Pool.balls[j]);
+							Pool.ballsHitNumber++;
 						}
 					}
 				}
 			}
 		}
+	}
+	else {
+		if (Pool.turnStarted) {
+			Pool.turnStarted = false;
+			Pool.turnEnded = true;
+		}
+	}
+
+	if (Pool.turnEnded) {
+		if (Pool.ballInPocket) {
+			Pool.ballInPocket = false;
+			if (Pool.isFault) {					// Player put wrong ball in pocket
+				Pool.Fault();
+			}
+			else {								// Player put correct ball in pocket
+				Pool.NextTurn(true);
+			}
+		}
+		else if (Pool.ballsHitNumber == 0) {	// White ball hasn't hit nothing
+			Pool.Fault();
+			Pool.balls[0].isInPocket = true;
+		}
+		else if (Pool.balls[0].isInPocket) {	// White ball in pocket
+			Pool.Fault();
+		}
+		else {									// No faults
+			Pool.NextTurn(false);
+		}
+		Pool.turnEnded = false;
+		Pool.ballsHitNumber = 0;
+		Pool.isFault = false;
 	}
 
 
@@ -274,8 +341,8 @@ bool MyModel::DrawGLScene(void)
 	}
 	this->glPrint("Elapsed time: %6.2f sec.  -  Fps %6.2f", Full_elapsed, fps);
 
-	glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
-	this->glPrint("Velocity: %1.6f ", Pool.balls[15].GetSlidingVelocity().x);
+	/*glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
+	this->glPrint("Velocity: %1.6f ", Pool.balls[15].GetSlidingVelocity().x);*/
 
 	glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(101), 0.0f);
 	this->glPrint("Phase: %2.6f %2.6f %2.6f",
@@ -290,7 +357,39 @@ bool MyModel::DrawGLScene(void)
 
 	{
 		glRasterPos3f(- (float) plx + PixToCoord_X(10), (float) -ply+PixToCoord_Y(61), 0.0f);
-		this->glPrint("%1d %1d  %s",cx,cy, captured ? "captured" : "Not captured" );
+		this->glPrint("Turn: %s", Pool.isPlayer1Turn ? "Player 1" : "Player 2" );
+		glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
+		char* s1;
+		char* s2;
+		switch (Pool.player1BallType)
+		{
+		case Ball::BallType::Undefined:
+			s1 = "undefined";
+			break;
+		case Ball::BallType::Solid:
+			s1 = "solid";
+			break;
+		case Ball::BallType::Striped:
+			s1 = "striped";
+			break;
+		default:
+			break;
+		}
+		switch (Pool.player2BallType)
+		{
+		case Ball::BallType::Undefined:
+			s2 = "undefined";
+			break;
+		case Ball::BallType::Solid:
+			s2 = "solid";
+			break;
+		case Ball::BallType::Striped:
+			s2 = "striped";
+			break;
+		default:
+			break;
+		}
+		this->glPrint("Player1: %s \t Player2: %s", s1, s2);
 	}
 
 	glEnable(GL_TEXTURE_2D);							// Enable Texture Mapping

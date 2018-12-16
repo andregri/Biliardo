@@ -284,50 +284,28 @@ LRESULT CALLBACK WndProc(	HWND	hWnd,		// Handle For This Window
 	{
 		POINTS p;
 		p = MAKEPOINTS(lParam);
-		if (!Data.Pool.balls[0].isInPocket) {	// White ball is not in pocket. Hit the ball
+		if (!Data.Pool.balls[0].isInPocket) {	// White ball is not in pocket. Hit the ball!
 			for (int i = 0; i < 16; i++) {
 				// If any ball is moving, you can't hit the white ball
-				if (Data.Pool.balls[i].isMoving && !Data.Pool.balls[i].isInPocket) {
+				if (!Data.Pool.balls[i].isInPocket && Data.Pool.balls[i].isMoving) {
 					return 0;
 				}
 			}
 			glm::vec3 clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), Ball::r);
 			glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();
 			Data.Pool.balls[0].SetShotVelocity((clickPos - ballPos));
+			Data.Pool.turnStarted = true;
+			Data.Pool.turnEnded = false;
 		}
-		else {									// White ball is in pocket. It needs to be placed on table
-			// You want to place the white ball outside the table
-			bool isOutside = true;
-			float ht = Data.Pool.table.h / 2;
-			if (Data.ClientY2World(p.y) > -ht + Ball::r	  &&
-				Data.ClientY2World(p.y) < ht - Ball::r) {
-				isOutside = false;
-			}
-
-			// There is another ball where you want to place white ball
-			bool isPositionEmpty = true;
-			for (int i = 8; i < 16; i++) {
-				// Check if you want to place the white ball over another ball
-				float ballX = Data.Pool.balls[i].GetPosition().x;
-				if (!Data.Pool.balls[i].isInPocket &&
-					ballX < -0.7f + 2*Ball::r &&
-					ballX > -0.7f - 2*Ball::r) {
-
-					float ballY = Data.Pool.balls[i].GetPosition().y;
-
-					if (Data.ClientY2World(p.y) > ballY - 2*Ball::r &&
-						Data.ClientY2World(p.y) < ballY + 2*Ball::r) {
-						isPositionEmpty = false;
-					}
+		else {									// White ball is in pocket. It needs to be placed on table!
+			// If any ball is moving, you can't place the white ball...
+			for (int i = 1; i < 16; i++) {
+				if (Data.Pool.balls[i].isMoving) {
+					return 0;
 				}
 			}
-
-			if (!isOutside && isPositionEmpty) {	// Place the ball
-				glm::vec3 whiteNewPos = glm::vec3(-0.7f, Data.ClientY2World(p.y), Ball::r);
-				Data.Pool.balls[0].SetPosition(whiteNewPos);
-				Data.Pool.balls[0].SetSlidingVelocity(glm::vec3(0.0f));
-				Data.Pool.balls[0].isInPocket = false;
-			}
+			// ...if no balls are moving, you can place the white ball...
+			Data.Pool.PlaceWhiteBall(Data.ClientY2World(p.y));
 		}
 		break;
 	}
@@ -355,7 +333,7 @@ LRESULT CALLBACK WndProc(	HWND	hWnd,		// Handle For This Window
 	case WM_SYSCOMMAND:							// Intercept System Commands
 	{
 		switch (wParam)							// Check System Calls
-		{	
+		{
 			case SC_SCREENSAVE:					// Screensaver Trying To Start?
 			case SC_MONITORPOWER:				// Monitor Trying To Enter Powersave?
 			return 0;							// Prevent From Happening

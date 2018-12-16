@@ -12,6 +12,15 @@ Ball::Ball(const int number)
 	: number(number), m(0.2),  mu_s(0.01)
 {
 	Init();
+	if (number >= 1 && number <= 8) {
+		color = Solid;
+	}
+	else if (number > 8 && number <= 15) {
+		color = Striped;
+	}
+	else {
+		color = Undefined;
+	}
 }
 
 Ball::~Ball()
@@ -22,6 +31,7 @@ void Ball::SetShotVelocity(glm::vec3 shot)
 {
 	v = shot;
 	w = glm::cross(glm::vec3(0.0f, 0.0f, r), v) * float(2.5 / (r*r));
+	isMoving = true;
 }
 
 // delta_t: time interval
@@ -106,7 +116,6 @@ void Ball::Draw()
 {
 	glTranslatef(x[0], x[1], r);
 	glRotatef(p, rot[0], rot[1], rot[2]);
-	//glRotatef(90.0f, 0.0f, 1.0f, 0.0f);
 
 #if !defined(DEBUG)
 	DrawSphere(r);
