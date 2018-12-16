@@ -59,6 +59,8 @@ public:
 
   // Pool variables
   Poolgame Pool;
+  float view_angle;
+  float force;
 
 private:
   //  projection limits in X and Y: x in [-plx, plx], y in [-ply, ply]
@@ -77,17 +79,21 @@ private:
   double Full_elapsed;				// elapsed time in seconds from the beginning of the program
 
   GLuint	texture[16];			// Storage For 16 Textures!
+  GLuint	rules;
+  GLuint	start;
+  GLuint	win[2];
   GLuint	base;					// Base Display List For The Font Set
 
 public:
   //  methods
   MyModel(): hDC(NULL), hRC (NULL), hWnd (NULL), active (true),
-    fullscreen(true), frames(0), fps(0), cursor(true), captured(false) {
+    fullscreen(true), frames(0), fps(0), cursor(true), captured(false),
+	view_angle(-PI / 2), force(1.0f) {
     Background.clear();
-    Background.push_back(Vertex(-1,-1,-5,0,0));
-    Background.push_back(Vertex( 1,-1,-5,1,0));
-    Background.push_back(Vertex( 1, 1,-5,1,1));
-    Background.push_back(Vertex(-1, 1,-5,0,1));
+	Background.push_back(Vertex(-1, -1, -1, 0, 0));
+	Background.push_back(Vertex( 1, -1, -1, 1, 0));
+	Background.push_back(Vertex( 1,  1, -1, 1, 1));
+	Background.push_back(Vertex(-1,  1, -1, 0, 1));
     fire.clear();
     fire.push_back(Vertex(-1,-1,-5,0,0));
     fire.push_back(Vertex( 1,-1,-5,1,0));
@@ -103,7 +109,6 @@ public:
     this->Tstart = this->Tstamp = clock();
     this->Full_elapsed = 0;
     this->frameTime = 0;
-
   }
   ~MyModel() {
     this->KillFont();

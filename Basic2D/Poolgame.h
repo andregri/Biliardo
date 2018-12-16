@@ -24,6 +24,12 @@ public:
 	bool turnEnded;
 	bool ballInPocket;
 	int ballsHitNumber;
+	bool ballSound;
+
+	enum GameState {PLAY, HOME, RULES, PLY1_WIN, PLY2_WIN};
+	enum View {TOP_VIEW, REAL_VIEW};
+	GameState gameState;
+	View view;
 
 	Poolgame();
 	~Poolgame();

@@ -5,7 +5,9 @@
 
 Poolgame::Poolgame()
 {
-	NewGame();
+	//NewGame();
+	gameState = GameState::HOME;
+	view = View::TOP_VIEW;
 }
 
 
@@ -67,9 +69,18 @@ void Poolgame::NewGame()
 	isFault = false;
 	ballInPocket = false;
 	ballsHitNumber = 0;
+	ballSound = false;
 	player1BallType = Ball::BallType::Undefined;
 	player2BallType = Ball::BallType::Undefined;
 	InitPositions();
+	for (int i = 0; i < 16; i++) {
+		balls[i].isInPocket = false;
+		balls[i].SetSlidingVelocity(glm::vec3(0.0f));
+		balls[i].SetAngularVelocity(glm::vec3(0.0f));
+	}
+	ballsInPocket.clear();
+	stripedInPocket.clear();
+	solidInPocket.clear();
 }
 
 void Poolgame::NextTurn(bool keepTurn)
@@ -129,10 +140,11 @@ void Poolgame::BallFallsInPocket(int ballNumber)
 	balls[ballNumber].isMoving = false;
 
 	glm::vec3 pos = balls[ballNumber].GetPosition();
-	balls[ballNumber].SetPosition(glm::vec3(pos.x, pos.y, -Ball::r));
+	balls[ballNumber].SetPosition(glm::vec3(100, 100, 100));
 
 	if (ballNumber == 0) {
 		// White ball in pocket -> Fault
+		view = Poolgame::View::TOP_VIEW;
 		isFault = true;
 	}
 	else {
@@ -146,10 +158,12 @@ void Poolgame::BallFallsInPocket(int ballNumber)
 
 		if (ballNumber == 8) {
 			if (IsGameOver()) {
-				NewGame();
-			}
-			else {
-				// player won the game
+				if (isPlayer1Turn) {
+					gameState = Poolgame::GameState::PLY2_WIN;
+				}
+				else {
+					gameState = Poolgame::GameState::PLY1_WIN;
+				}
 			}
 			
 		}

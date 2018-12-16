@@ -50,6 +50,7 @@ using namespace audiere;
 //#pragma comment( lib, "winmm.lib" )						// Search For WinMM Library While Linking
 
 class MyModel Data;
+bool victorySound = true;
 
 LRESULT	CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);	// Declaration For WndProc
 
@@ -291,8 +292,16 @@ LRESULT CALLBACK WndProc(	HWND	hWnd,		// Handle For This Window
 					return 0;
 				}
 			}
-			glm::vec3 clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), Ball::r);
-			glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();
+			glm::vec3 clickPos;
+			glm::vec3 ballPos = Data.Pool.balls[0].GetPosition();;
+			if (Data.Pool.view == Poolgame::View::TOP_VIEW) {
+				clickPos = glm::vec3(Data.ClientX2World(p.x), Data.ClientY2World(p.y), Ball::r);
+			}
+			if (Data.Pool.view == Poolgame::View::REAL_VIEW) {
+				clickPos = glm::vec3(-Data.force * sin(Data.view_angle) + ballPos.x,
+									 -Data.force * cos(Data.view_angle) + ballPos.y,
+									 Ball::r);
+			}
 			Data.Pool.balls[0].SetShotVelocity((clickPos - ballPos));
 			Data.Pool.turnStarted = true;
 			Data.Pool.turnEnded = false;
@@ -404,21 +413,41 @@ int WINAPI WinMain(	HINSTANCE	hInstance,			// Instance
 	if (!device) {
 		return 0;         // failure
 	}
-	OutputStreamPtr stream(OpenSound(device, "../Data/ophelia.mp3", true));
+	OutputStreamPtr stream(OpenSound(device, "../Data/soundtrack.mp3", true));
 	if (!stream) {
 		return 0;         // failure
 	}
 	stream->setRepeat(true);
 	stream->setVolume(0.5f);	// 50% volume
-	//stream->play();
+	stream->play();
 
+	OutputStreamPtr winSound(OpenSound(device, "../Data/win.wav", false));
 	OutputStreamPtr explosion(OpenSound(device, "../Data/explosion.wav", false));
 	OutputStreamPtr bell(OpenSound(device, "../Data/bell.wav", false));
 	OutputStreamPtr stupid(OpenSound(device, "../Data/stupid.wav", false));
+	OutputStreamPtr ballSound(OpenSound(device, "../Data/ball.mp3", false));
 	//  AUDIO - end
 
 	while(!done)									// Loop That Runs While done=FALSE
 	{
+		if (Data.Pool.gameState == Poolgame::GameState::PLY1_WIN ||
+			Data.Pool.gameState == Poolgame::GameState::PLY2_WIN) {
+			if (victorySound) {
+				winSound->play();
+				victorySound = false;
+			}
+		}
+		else {
+			victorySound = true;
+		}
+
+		if (Data.Pool.ballSound) {
+			if (ballSound->isPlaying()) ballSound->reset();
+			else ballSound->play();
+			ballSound->play();
+			Data.Pool.ballSound = false;
+		}
+
 		if (PeekMessage(&msg,NULL,0,0,PM_REMOVE))	// Is There A Message Waiting?
 		{
 			if (msg.message==WM_QUIT)				// Have We Received A Quit Message?
@@ -444,35 +473,74 @@ int WINAPI WinMain(	HINSTANCE	hInstance,			// Instance
 			}
 
 			//  Removed the F1 key: no fullscreen!
-			/*
+			
 			if (Data.keys[VK_F1])						// Is F1 Being Pressed?
 			{
 				Data.keys[VK_F1]=FALSE;					// If So Make Key FALSE
-				KillGLWindow();							// Kill Our Current Window
-				Data.fullscreen=!Data.fullscreen;		// Toggle Fullscreen / Windowed Mode
-				// Recreate Our OpenGL Window
-				if (!CreateGLWindow("Basic 2D game skeleton",640,480,16,Data.fullscreen))
-				{
-					return 0;							// Quit If Window Was Not Created
-				}
-			}*/
+				Data.Pool.gameState = Poolgame::GameState::RULES;
+			}
 			if (Data.keys[VK_F2])						// Is F2 Being Pressed?
 			{
 				Data.keys[VK_F2]=FALSE;					// If So Make Key FALSE
-				if( explosion->isPlaying() ) explosion->reset();
-				else explosion->play();
+				Data.Pool.NewGame();
+				Data.Pool.gameState = Poolgame::GameState::PLAY;
 			}
-			if (Data.keys[VK_F3])						// Is F3 Being Pressed?
+			if (Data.keys[0x42])						// Is B Being Pressed?
 			{
-				Data.keys[VK_F3]=FALSE;					// If So Make Key FALSE
-				if( bell->isPlaying() ) bell->reset();
-				else bell->play();
+				// Back Homepage
+				Data.keys[0x42]=FALSE;					// If So Make Key FALSE
+				Data.Pool.gameState = Poolgame::GameState::HOME;
+			}
+			if (Data.keys[0x56])						// Is V Being Pressed?
+			{
+				// Change view
+				Data.keys[0x56] = FALSE;				// If So Make Key FALSE
+				if (Data.Pool.gameState == Poolgame::GameState::PLAY) {
+					if (Data.Pool.view == Poolgame::View::TOP_VIEW) {
+						Data.Pool.view = Poolgame::View::REAL_VIEW;
+					}
+					else {
+						Data.Pool.view = Poolgame::View::TOP_VIEW;
+					}
+				}
 			}
 			if (Data.keys[VK_F4])						// Is F4 Being Pressed?
 			{
 				Data.keys[VK_F4]=FALSE;					// If So Make Key FALSE
-				if( stupid->isPlaying() ) stupid->reset();
-				else stupid->play();
+				if( winSound->isPlaying() ) winSound->reset();
+				else winSound->play();
+			}
+			if (Data.keys[VK_LEFT])						// Is F4 Being Pressed?
+			{
+				Data.keys[VK_LEFT] = FALSE;					// If So Make Key FALSE
+				if (Data.Pool.view == Poolgame::View::REAL_VIEW) {
+					Data.view_angle += 0.01;
+				}
+			}
+			if (Data.keys[VK_RIGHT])						// Is F4 Being Pressed?
+			{
+				Data.keys[VK_RIGHT] = FALSE;					// If So Make Key FALSE
+				if (Data.Pool.view == Poolgame::View::REAL_VIEW) {
+					Data.view_angle -= 0.01;
+				}
+			}
+			if (Data.keys[VK_UP])						// Is F4 Being Pressed?
+			{
+				Data.keys[VK_UP] = FALSE;					// If So Make Key FALSE
+				if (Data.Pool.view == Poolgame::View::REAL_VIEW) {
+					if (Data.force < 1.3f) {
+						Data.force += 0.1f;
+					}
+				}
+			}
+			if (Data.keys[VK_DOWN])						// Is F4 Being Pressed?
+			{
+				Data.keys[VK_DOWN] = FALSE;					// If So Make Key FALSE
+				if (Data.Pool.view == Poolgame::View::REAL_VIEW) {
+					if (Data.force > 0.5f) {
+						Data.force -= 0.1f;
+					}
+				}
 			}
 		}
 	}
