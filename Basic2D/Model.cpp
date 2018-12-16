@@ -190,7 +190,12 @@ bool MyModel::DrawGLScene(void)
 		if (Pool.view == Poolgame::View::TOP_VIEW) {
 			if (captured) {
 				glBegin(GL_LINES);
-				glColor3f(1.0f, 0.0f, 0.0f);
+				if (Pool.isPlayer1Turn) {
+					glColor3f(1.0f, 0.0f, 0.0f);
+				}
+				else {
+					glColor3f(0.0f, 0.0f, 1.0f);
+				}
 				glVertex3f(ClientX2World(cx), ClientY2World(cy), Ball::r);
 				glm::vec3 x_ = Pool.balls[0].GetPosition();
 				glVertex3f(x_[0], x_[1], Ball::r);
@@ -199,7 +204,12 @@ bool MyModel::DrawGLScene(void)
 		}
 		if (Pool.view == Poolgame::View::REAL_VIEW) {
 			glBegin(GL_LINES);
-			glColor3f(1.0f, 0.0f, 0.0f);
+			if (Pool.isPlayer1Turn) {
+				glColor3f(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				glColor3f(0.0f, 0.0f, 1.0f);
+			}
 			glm::vec3 x_ = Pool.balls[0].GetPosition();
 			glVertex3f(	-force * sin(view_angle) + x_.x,
 						-force * cos(view_angle) + x_.y, Ball::r);
@@ -380,34 +390,42 @@ bool MyModel::DrawGLScene(void)
 		glColor3f(1.0f, 1.0f, 1.0f);
 
 		// Position The Text On The Screen
-		glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)ply - PixToCoord_Y(21), 0.0f);
+		//glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)ply - PixToCoord_Y(21), 0.0f);
 
-		// compute fps and write text
-		this->frames++;
-		if (this->frames > 18) {
-			this->fps = frames / frameTime;
-			this->frames = 0; this->frameTime = 0;
-		}
-		this->glPrint("Elapsed time: %6.2f sec.  -  Fps %6.2f", Full_elapsed, fps);
+		//// compute fps and write text
+		//this->frames++;
+		//if (this->frames > 18) {
+		//	this->fps = frames / frameTime;
+		//	this->frames = 0; this->frameTime = 0;
+		//}
+		//this->glPrint("Elapsed time: %6.2f sec.  -  Fps %6.2f", Full_elapsed, fps);
 
 		//glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
 		//this->glPrint("Velocity: %1.6f ", Pool.balls[15].GetSlidingVelocity().x);
 
-		glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(101), 0.0f);
-		this->glPrint("Phase: %2.6f %2.6f %2.6f",
-			Pool.balls[0].GetPosition().x,
-			Pool.balls[0].GetPosition().y,
-			Pool.balls[0].GetPosition().z);
+		//glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(101), 0.0f);
+		//this->glPrint("Phase: %2.6f %2.6f %2.6f",
+		//	Pool.balls[0].GetPosition().x,
+		//	Pool.balls[0].GetPosition().y,
+		//	Pool.balls[0].GetPosition().z);
 
 		if (this->Full_elapsed < 6) {
-			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(21), 0.0f);
-			this->glPrint("...F2/F3/F4 for sounds");
+			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(51), 0.0f);
+			this->glPrint("...V to change point of view");
 		}
 
 		{
-			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(61), 0.0f);
+			if (Pool.isPlayer1Turn) {
+				glColor3f(1.0f, 0.0f, 0.0f);
+			}
+			else {
+				glColor3f(0.0f, 0.0f, 1.0f);
+			}
+			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(11), 0.0f);
 			this->glPrint("Turn: %s", Pool.isPlayer1Turn ? "Player 1" : "Player 2");
-			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(81), 0.0f);
+
+			glColor3f(1.0f, 1.0f, 1.0f);
+			glRasterPos3f(-(float)plx + PixToCoord_X(10), (float)-ply + PixToCoord_Y(31), 0.0f);
 			char* s1;
 			char* s2;
 			switch (Pool.player1BallType)
